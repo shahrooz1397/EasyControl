@@ -14,7 +14,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+import os
 from pyrogram import Client, Filters, MessageHandler
+from pyrogram.errors import BadRequest
 
 
 class CmdModule(object):
@@ -22,13 +24,17 @@ class CmdModule(object):
         self.commands = {
             'dump': [
                 MessageHandler(self.dump, Filters.command('dump', config['prefix'])),
-                'Show the dump of the inline queries of a reply markup'
+                'Show the dump of the inline queries of the reply markup of the replied message'
             ]
         }
 
     @staticmethod
-    async def dump(_, message):
-        text = ''
+    async def dump(client, message):
+        if (message.reply_to_message is None
+                or message.reply_to_message.reply_markup is None
+                or message.reply_to_message.reply_markup.inline_keyboard is None):
+            await message.stop_propagation()
+        text = []
 
         for row in message.reply_to_message.reply_markup.inline_keyboard:
             for btn in row:
@@ -40,5 +46,9 @@ class CmdModule(object):
                     data = btn.switch_inline_query
                 else:
                     data = btn.switch_inline_query_current_chat
-                text += '%s -> %s\n' % (btn.text, data)
-        await message.reply(text)
+                text.append('%s -> %s' % (btn.text, data))
+
+        try:
+            await client.edit_message_text(message.chat.id, message.message_id, os.linesep.join(text))
+        except BadRequest:
+            await client.send_message(message.chat.id, os.linesep.join(text))

@@ -15,13 +15,15 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from pyrogram import Client, Filters, MessageHandler
+from pyrogram.errors import BadRequest
 
 
 class CmdModule(object):
     def __init__(self, _: Client, config: dict):
         self.commands = {  # Define the commands of the module
             'check': [  # Define the first command
-                MessageHandler(self.check, Filters.command('check', config['prefix'])),  # Define the handler of the command
+                MessageHandler(self.check, Filters.command('check', config['prefix'])),
+                # Define the handler of the command
                 'Check if the userbot is online'  # Define the help message to be shown
             ]
             # Eventually add more commands with the same format
@@ -29,7 +31,7 @@ class CmdModule(object):
 
     @staticmethod
     async def check(client, message):
-        await client.edit_message_text(
-            message.chat.id, message.message_id,
-            '✌🏻 <b>Userbot online CHECK</b>'
-        )
+        try:
+            await client.edit_message_text(message.chat.id, message.message_id, '✌🏻 <b>Userbot online CHECK</b>')
+        except BadRequest:
+            await client.send_message(message.chat.id, '✌🏻 <b>Userbot online CHECK</b>')
