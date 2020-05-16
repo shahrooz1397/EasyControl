@@ -24,7 +24,8 @@ from .basic_modules import BasicModulesLoader
 
 class EasyControl(object):
     def __init__(self, api_id: int, api_hash: str,
-                 conf_path: str = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'config.json')):
+                 conf_path: str = os.path.join(os.path.abspath(os.path.dirname(__file__)),
+                                               'config.json')):
         self.config, self.modules = None, {}
         self.load_config(conf_path)
         self.app = Client('EasyControl', api_id, api_hash)
@@ -57,10 +58,11 @@ class EasyControl(object):
         for module in modules_list:
             if not module.endswith('.py'):
                 continue
-            spec = importlib.util.spec_from_file_location(module, os.path.join(self.config['modules_path'], module))
+            module_name = os.path.splitext(module)[0]
+            spec = importlib.util.spec_from_file_location(module_name,
+                                                          os.path.join(self.config['modules_path'], module))
             imported_module = importlib.util.module_from_spec(spec)
             spec.loader.exec_module(imported_module)
-            module_name = os.path.splitext(module)[0]
             self.modules[module_name] = imported_module.CmdModule(self.app, self.config).commands
 
             if not module_name in self.config['unloaded_modules']:

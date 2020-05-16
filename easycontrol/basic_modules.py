@@ -54,7 +54,8 @@ class BasicModulesLoader(object):
             if module_name in self.config['unloaded_modules']:
                 continue
             text.append('<b>{0}:</b>'.format(
-                'Default commands' if module_name == '_' else "Module {0}'s commands".format(module_name)))
+                'Default commands' if module_name == '_' else "</b><i>{0}</i> <b>module's commands".format(
+                    module_name)))
 
             for command, sub in module.items():
                 text.append('<code>{0}{1}</code>: {2}'.format(self.config['prefix'], command, sub[1]))
@@ -93,13 +94,20 @@ class BasicModulesLoader(object):
             ]))
 
     async def load(self, client, message):
-        if len(message.command) == 1 or not message.command[1] in self.modules or not message.command[1] in self.config[
-            'unloaded_modules']:
+        if (not len(message.command) == 2
+                or message.command[1] in self.modules
+                or not message.command[1] + '.py' in os.listdir(self.config['modules_path'])):
             await message.stop_propagation()
+        self.config['unloaded_modules'].remove(message.command[1])
+        spec = importlib.util.spec_from_file_location(message.command[1],
+                                                      os.path.join(self.config['modules_path'],
+                                                                   message.command[1] + '.py'))
+        imported_module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(imported_module)
+        self.modules[message.command[1]] = imported_module.CmdModule(self.app, self.config).commands
 
         for sub in self.modules[message.command[1]].values():
             client.add_handler(sub[0])
-        self.config['unloaded_modules'].remove(message.command[1])
 
         with open(self.config['conf_path'], 'w') as f:
             f.write(json.dumps(self.config, indent=2))
@@ -107,20 +115,24 @@ class BasicModulesLoader(object):
         try:
             await client.edit_message_text(message.chat.id, message.message_id,
                                            '<b>The module</b> <code>{0}</code> <b>has been loaded</b>'.format(
-                                               message.command[1]))
+                                               message.command[1]
+                                           ))
         except BadRequest:
             await client.send_message(message.chat.id,
                                       '<b>The module</b> <code>{0}</code> <b>has been loaded</b>'.format(
-                                          message.command[1]))
+                                          message.command[1]
+                                      ))
 
     async def unload(self, client, message):
-        if len(message.command) == 1 or not message.command[1] in self.modules or message.command[1] in self.config[
-            'unloaded_modules'] or message.command[1] == '_':
+        if (not len(message.command) == 2
+                or not message.command[1] in self.modules
+                or message.command[1] == '_'):
             await message.stop_propagation()
+        self.config['unloaded_modules'].append(message.command[1])
 
         for sub in self.modules[message.command[1]].values():
             client.remove_handler(sub[0])
-        self.config['unloaded_modules'].append(message.command[1])
+        self.modules.remove(message.command[1])
 
         with open(self.config['conf_path'], 'w') as f:
             f.write(json.dumps(self.config, indent=2))
@@ -128,8 +140,10 @@ class BasicModulesLoader(object):
         try:
             await client.edit_message_text(message.chat.id, message.message_id,
                                            '<b>The module</b> <code>{0}</code> <b>has been unloaded</b>'.format(
-                                               message.command[1]))
+                                               message.command[1]
+                                           ))
         except BadRequest:
             await client.send_message(message.chat.id,
                                       '<b>The module</b> <code>{0}</code> <b>has been unloaded</b>'.format(
-                                          message.command[1]))
+                                          message.command[1]
+                                      ))
