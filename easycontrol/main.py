@@ -56,7 +56,8 @@ class EasyControl(object):
         modules_list = os.listdir(self.config['modules_path'])
 
         for module in modules_list:
-            if not module.endswith('.py'):
+            if (not module.endswith('.py')
+                    or module_name in self.config['unloaded_modules']):
                 continue
             module_name = os.path.splitext(module)[0]
             spec = importlib.util.spec_from_file_location(module_name,
@@ -64,9 +65,6 @@ class EasyControl(object):
             imported_module = importlib.util.module_from_spec(spec)
             spec.loader.exec_module(imported_module)
             self.modules[module_name] = imported_module.CmdModule(self.app, self.config).commands
-
-            if not module_name in self.config['unloaded_modules']:
-                continue
 
             for sub in self.modules[module_name].values():
                 self.app.add_handler(sub[0])

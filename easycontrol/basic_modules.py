@@ -132,7 +132,7 @@ class BasicModulesLoader(object):
 
         for sub in self.modules[message.command[1]].values():
             client.remove_handler(sub[0])
-        self.modules.remove(message.command[1])
+        del self.modules[message.command[1]]
 
         with open(self.config['conf_path'], 'w') as f:
             f.write(json.dumps(self.config, indent=2))
