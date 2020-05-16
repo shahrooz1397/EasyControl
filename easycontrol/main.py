@@ -24,16 +24,12 @@ from .basic_modules import BasicModulesLoader
 
 class EasyControl(object):
     def __init__(self, api_id: int, api_hash: str,
-                 conf_path: str = os.path.join(os.path.abspath(os.path.dirname(__file__)),
-                                               'config.json')):
+                 conf_path: str = os.path.join(os.path.dirname(__file__), 'config.json')):
         self.config, self.modules = None, {}
         self.load_config(conf_path)
         self.app = Client('EasyControl', api_id, api_hash)
-
-        if 'modules_path' in self.config:
-            self.config['modules_path'] = os.path.abspath(self.config['modules_path'])
-            self.load_modules()
         BasicModulesLoader(self.app, self.config, self.modules)
+        self.load_modules()
         asyncio.get_event_loop().run_until_complete(self.start_app())
 
     def load_config(self, conf_path: str):

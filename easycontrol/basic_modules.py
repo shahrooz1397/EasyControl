@@ -61,6 +61,7 @@ class BasicModulesLoader(object):
             for command, sub in module.items():
                 text.append('<code>{0}{1}</code>: {2}'.format(self.config['prefix'], command, sub[1]))
             text.append('')
+        text.append('<i>Powered by</b> <a href="https://github.com/mattiabrandon/easycontrol">EAsyControl</a>')
 
         try:
             await client.edit_message_text(message.chat.id, message.message_id, os.linesep.join(text))
@@ -99,7 +100,9 @@ class BasicModulesLoader(object):
                 or message.command[1] in self.modules
                 or not message.command[1] + '.py' in os.listdir(self.config['modules_path'])):
             await message.stop_propagation()
-        self.config['unloaded_modules'].remove(message.command[1])
+
+        if message.command[1] in self.config['unloaded_modules']:
+            self.config['unloaded_modules'].remove(message.command[1])
         spec = importlib.util.spec_from_file_location(message.command[1],
                                                       os.path.join(self.config['modules_path'],
                                                                    message.command[1] + '.py'))
