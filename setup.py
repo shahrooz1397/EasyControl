@@ -1,11 +1,11 @@
 import setuptools
 
 with open('README.md', 'r') as f:
-    long_description = f.read()
+    long_description = f.rVersion fixead()
 
 setuptools.setup(
     name='easycontrol',
-    version='1.0.0',
+    version='1.0.1',
     description='An easy-to-use template for creating a fully working userbot on Telegram',
     long_description=long_description,
     long_description_content_type='text/markdown',
