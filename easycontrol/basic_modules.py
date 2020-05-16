@@ -61,7 +61,7 @@ class BasicModulesLoader(object):
             for command, sub in module.items():
                 text.append('<code>{0}{1}</code>: {2}'.format(self.config['prefix'], command, sub[1]))
             text.append('')
-        text.append('<i>Powered by</b> <a href="https://github.com/mattiabrandon/easycontrol">EAsyControl</a>')
+        text.append('<i>Powered by</i> <a href="https://github.com/mattiabrandon/easycontrol">EasyControl</a>')
 
         try:
             await client.edit_message_text(message.chat.id, message.message_id, os.linesep.join(text))
