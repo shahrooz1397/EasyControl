@@ -53,7 +53,7 @@ class BasicModulesLoader(object):
         for module_name, module in self.modules.items():
             if module_name in self.config['unloaded_modules']:
                 continue
-            text.append('<b>:</b>'.format(
+            text.append('<b>{0}:</b>'.format(
                 'Default commands' if module_name == '_' else "Module {0}'s commands".format(module_name)))
 
             for command, sub in module.items():
