@@ -105,7 +105,7 @@ class BasicModulesLoader(object):
                                                                    message.command[1] + '.py'))
         imported_module = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(imported_module)
-        self.modules[message.command[1]] = imported_module.CmdModule(self.app, self.config).commands
+        self.modules[message.command[1]] = imported_module.CmdModule(client, self.config).commands
 
         for sub in self.modules[message.command[1]].values():
             client.add_handler(sub[0])
