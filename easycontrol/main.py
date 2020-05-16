@@ -56,10 +56,11 @@ class EasyControl(object):
         modules_list = os.listdir(self.config['modules_path'])
 
         for module in modules_list:
+            module_name = os.path.splitext(module)[0]
+
             if (not module.endswith('.py')
                     or module_name in self.config['unloaded_modules']):
                 continue
-            module_name = os.path.splitext(module)[0]
             spec = importlib.util.spec_from_file_location(module_name,
                                                           os.path.join(self.config['modules_path'], module))
             imported_module = importlib.util.module_from_spec(spec)
