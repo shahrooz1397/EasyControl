@@ -79,11 +79,11 @@ class CmdModule(object):
                 )
             except BadRequest:
                 try:
-                    await client.edit_message(message.chat.id, message.message_id, os.linesep.join(text))
+                    await client.edit_message_text(message.chat.id, message.message_id, os.linesep.join(text))
                 except BadRequest:
                     await client.send_message(message.chat.id, os.linesep.join(text))
         else:
             try:
-                await client.edit_message(message.chat.id, message.message_id, os.linesep.join(text))
+                await client.edit_message_text(message.chat.id, message.message_id, os.linesep.join(text))
             except BadRequest:
                 await client.send_message(message.chat.id, os.linesep.join(text))

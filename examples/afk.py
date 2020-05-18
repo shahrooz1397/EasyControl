@@ -23,8 +23,6 @@ from pyrogram import Client, Filters, MessageHandler, Message
 
 
 class CmdModule(object):
-    NOW = datetime.timestamp(datetime.utcnow())
-
     def __init__(self, app: Client, config: dict):
         self.config = config
         self.commands = {
@@ -45,7 +43,7 @@ class CmdModule(object):
             await message.stop_propagation()
         self.config['afk'] = {
             'is_afk': True,
-            'start': self.NOW,
+            'start': datetime.timestamp(datetime.utcnow()),
             'notified': {}
         }
 
@@ -74,13 +72,15 @@ class CmdModule(object):
             await client.send_message(message.chat.id, '<b>Afk mode disabled</b>')
 
     async def wrapper(self, client: Client, message: Message):
+        now = datetime.timestamp(datetime.utcnow())
+
         if (message.from_user.is_bot
                 or not 'afk' in self.config
                 or not self.config['afk']['is_afk']
                 or (message.from_user.id in self.config['afk']['notified'].keys()
-                    and self.config['afk']['notified'][message.from_user.id] > self.NOW)):
+                    and self.config['afk']['notified'][message.from_user.id] > now)):
             return
-        self.config['afk']['notified'][message.from_user.id] = self.NOW + 3600
+        self.config['afk']['notified'][message.from_user.id] = now + 3600
 
         with open(self.config['conf_path'], 'w') as f:
             f.write(json.dumps(self.config, indent=2))

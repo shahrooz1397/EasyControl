@@ -74,7 +74,7 @@ class BasicModulesLoader(object):
             for command, sub in module.items():
                 text.append('<code>{0}{1}</code>: {2}'.format(self.config['prefix'], command, sub[1]))
             text.append('')
-        text.append('<code>Powered by @EasyControl</code>')
+        text.append('<code>Powered by EasyControl</code>')
 
         try:
             await client.edit_message_text(message.chat.id, message.message_id, os.linesep.join(text))
