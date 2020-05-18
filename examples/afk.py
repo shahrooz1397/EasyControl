@@ -15,11 +15,11 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import os
-import sqlite3
+import math
 import json
 from datetime import datetime
-from pyrogram import Client, Filters, MessageHandler, Message
 from pyrogram.errors import BadRequest
+from pyrogram import Client, Filters, MessageHandler, Message
 
 
 class CmdModule(object):
@@ -37,37 +37,13 @@ class CmdModule(object):
         }
         app.add_handler(MessageHandler(self.wrapper, Filters.private & ~Filters.me), group=-1)
 
-    def query(self, query: str, bindings: tuple = (), fetch: bool = True):
-        conn = sqlite3.connect(os.path.join(os.path.dirname(self.config['conf_path']), 'EasyControl.session'))
-        conn.row_factory = sqlite3.Row
-        cursor = conn.cursor()
-
-        if bindings:
-            cursor.execute(query, bindings)
-        else:
-            cursor.execute(query)
-
-        if fetch:
-            result = cursor.fetchall()
-
-            if (result is not None
-                    and len(result) == 1):
-                result = result[0]
-        conn.commit()
-        cursor.close()
-        conn.close()
-
-        if fetch:
-            return result
-
     async def afk(self, client: Client, message: Message):
         if ('afk' in self.config
                 and self.config['afk']['is_afk']):
             await message.stop_propagation()
         self.config['afk'] = {
             'is_afk': True,
-            'start': datetime.timestamp(datetime.now()),
-            'notified': []
+            'notified': {}
         }
 
         with open(self.config['conf_path'], 'w') as f:
@@ -83,7 +59,6 @@ class CmdModule(object):
                 or not self.config['afk']['is_afk']):
             await message.stop_propagation()
         self.config['afk']['is_afk'] = False
-        del self.config['afk']['start']
         del self.config['afk']['notified']
 
         with open(self.config['conf_path'], 'w') as f:
@@ -95,22 +70,21 @@ class CmdModule(object):
             await client.send_message(message.chat.id, '<b>Afk mode disabled</b>')
 
     async def wrapper(self, client: Client, message: Message):
+        now = datetime.timestamp(datetime.now())
+
         if (not 'afk' in self.config
                 or not self.config['afk']['is_afk']
-                or message.from_user.id in self.config['afk']['notified']):
+                or (message.from_user.id in self.config['afk']['notified'].keys()
+                    and self.config['afk']['notified'][message.from_user.id] > math.floor(now))
+                or message.from_user.is_bot if hasattr(message.from_user) else False):
             return
-        peer = dict(self.query('SELECT * FROM peers WHERE id = ?', (message.from_user.id,)))
+        self.config['afk']['notified'][message.from_user.id] = now + 3600
 
-        if (peer is None
-                or ('last_update_on' in peer
-                and peer['last_update_on'] <= self.config['afk']['start'])):
-            self.config['afk']['notified'].append(message.from_user.id)
-
-            with open(self.config['conf_path'], 'w') as f:
-                f.write(json.dumps(self.config, indent=2))
-            await client.send_message(message.chat.id, os.linesep.join([
-                "<b>Hi, I've gone afk at</b> <code>{0}</code>".format(
-                    datetime.fromtimestamp(self.config['afk']['start']).strftime('%d/%m/%Y %H:%M:%S')
-                ),
-                'Before writing me other messages, please wait until my return'
-            ]))
+        with open(self.config['conf_path'], 'w') as f:
+            f.write(json.dumps(self.config, indent=2))
+        await client.send_message(message.chat.id, os.linesep.join([
+            "<b>Hi, I've gone afk at</b> <code>{0}</code>".format(
+                datetime.fromtimestamp(self.config['afk']['start']).strftime('%x %X %z')
+            ),
+            'Before writing me other messages, please wait until my return'
+        ]))
