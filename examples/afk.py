@@ -23,6 +23,8 @@ from pyrogram import Client, Filters, MessageHandler, Message
 
 
 class CmdModule(object):
+    NOW = datetime.timestamp(datetime.utcnow())
+
     def __init__(self, app: Client, config: dict):
         self.config = config
         self.commands = {
@@ -43,6 +45,7 @@ class CmdModule(object):
             await message.stop_propagation()
         self.config['afk'] = {
             'is_afk': True,
+            'start': self.NOW,
             'notified': {}
         }
 
@@ -59,6 +62,7 @@ class CmdModule(object):
                 or not self.config['afk']['is_afk']):
             await message.stop_propagation()
         self.config['afk']['is_afk'] = False
+        del self.config['afk']['start']
         del self.config['afk']['notified']
 
         with open(self.config['conf_path'], 'w') as f:
@@ -70,21 +74,19 @@ class CmdModule(object):
             await client.send_message(message.chat.id, '<b>Afk mode disabled</b>')
 
     async def wrapper(self, client: Client, message: Message):
-        now = datetime.timestamp(datetime.now())
-
-        if (not 'afk' in self.config
+        if (message.from_user.is_bot
+                or not 'afk' in self.config
                 or not self.config['afk']['is_afk']
                 or (message.from_user.id in self.config['afk']['notified'].keys()
-                    and self.config['afk']['notified'][message.from_user.id] > math.floor(now))
-                or message.from_user.is_bot if hasattr(message.from_user) else False):
+                    and self.config['afk']['notified'][message.from_user.id] > self.NOW)):
             return
-        self.config['afk']['notified'][message.from_user.id] = now + 3600
+        self.config['afk']['notified'][message.from_user.id] = self.NOW + 3600
 
         with open(self.config['conf_path'], 'w') as f:
             f.write(json.dumps(self.config, indent=2))
         await client.send_message(message.chat.id, os.linesep.join([
-            "<b>Hi, I've gone afk at</b> <code>{0}</code>".format(
-                datetime.fromtimestamp(self.config['afk']['start']).strftime('%x %X %z')
+            "<b>Hi, I went afk at</b> <code>{0}</code>.".format(
+                datetime.utcfromtimestamp(self.config['afk']['start']).strftime('%d/%m/%Y %H:%M:%S UTC')
             ),
-            'Before writing me other messages, please wait until my return'
+            'Before writing me other messages, please wait me to get out of the afk status'
         ]))
