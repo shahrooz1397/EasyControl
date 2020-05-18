@@ -15,7 +15,8 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import os
-from pyrogram import Client, Filters, MessageHandler
+import html
+from pyrogram import Client, Filters, MessageHandler, Message
 from pyrogram.errors import BadRequest
 
 
@@ -29,11 +30,13 @@ class CmdModule(object):
         }
 
     @staticmethod
-    async def info(client, message):
+    async def info(client: Client, message: Message):
         if message.reply_to_message is None:
             await message.stop_propagation()
-        from_user = (await client.get_messages(message.chat.id,
-                                               message.reply_to_message.message_id)).from_user
+        from_user = (await client.get_messages(
+            message.chat.id,
+            message.reply_to_message.message_id
+        )).from_user
         from_chat = await client.get_chat(from_user.id)
         text = [
             '<b>Info about</b> <a href="tg://user?id={0}">{1}</a><b>:</b>'.format(
@@ -50,7 +53,7 @@ class CmdModule(object):
             ))
 
         if from_user.username is not None:
-            text.append('<b>Username:</b> <code>{0}</code>'.format(from_user.username))
+            text.append('<b>Username:</b> @{0}'.format(from_user.username))
 
         if from_chat.description is not None:
             text.append('<b>Bio:</b> <code>{0}</code>'.format(from_chat.description))
@@ -66,17 +69,21 @@ class CmdModule(object):
         text.append('<b>Is scam:</b> <code>{0}</code>'.format(from_user.is_scam))
         text.append('<b>Is support:</b> <code>{0}</code>'.format(from_user.is_support))
 
-        try:
-            await client.delete_messages(message.chat.id, message.message_id)
-        except BadRequest:
-            pass
-
         if not from_user.photo is None:
             try:
+                await client.delete_messages(message.chat.id, message.message_id)
                 profile_photo = (await client.get_profile_photos(from_user.id, limit=1))[0]
-                await client.send_photo(message.chat.id, profile_photo.file_id, profile_photo.file_ref,
-                                        os.linesep.join(text))
+                await client.send_photo(
+                    message.chat.id, profile_photo.file_id, profile_photo.file_ref,
+                    os.linesep.join(text)
+                )
+            except BadRequest:
+                try:
+                    await client.edit_message(message.chat.id, message.message_id, os.linesep.join(text))
+                except BadRequest:
+                    await client.send_message(message.chat.id, os.linesep.join(text))
+        else:
+            try:
+                await client.edit_message(message.chat.id, message.message_id, os.linesep.join(text))
             except BadRequest:
                 await client.send_message(message.chat.id, os.linesep.join(text))
-        else:
-            await client.send_message(message.chat.id, os.linesep.join(text))

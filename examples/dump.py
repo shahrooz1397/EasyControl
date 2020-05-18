@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import os
-from pyrogram import Client, Filters, MessageHandler
+from pyrogram import Client, Filters, MessageHandler, Message
 from pyrogram.errors import BadRequest
 
 
@@ -29,7 +29,7 @@ class CmdModule(object):
         }
 
     @staticmethod
-    async def dump(client, message):
+    async def dump(client: Client, message: Message):
         if (message.reply_to_message is None
                 or message.reply_to_message.reply_markup is None
                 or message.reply_to_message.reply_markup.inline_keyboard is None):

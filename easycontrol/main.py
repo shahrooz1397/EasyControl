@@ -23,25 +23,39 @@ from .basic_modules import BasicModulesLoader
 
 
 class EasyControl(object):
-    def __init__(self, api_id: int, api_hash: str,
-                 conf_path: str = os.path.join(os.path.dirname(__file__), 'config.json')):
-        self.config, self.modules = None, {}
-        self.load_config(conf_path)
+    def __init__(
+            self, api_id: int, api_hash: str,
+            conf_path: str = os.path.join(os.path.abspath(os.getcwd()), 'config.json')
+    ):
+        """
+        Define the instance of this class, start the Pyrogram's client and load all the modules and commands.
+
+        :param api_id: The api_id of the app used to start the client.
+        :param api_hash: The api_hash of the app used to start the client.
+        :param conf_path: The path to the config file.
+        """
+
+        self.conf_path = conf_path
+        self.config = None
+        self.modules = {}
+        self.load_config()
         self.app = Client('EasyControl', api_id, api_hash)
         BasicModulesLoader(self.app, self.config, self.modules)
         self.load_modules()
         asyncio.get_event_loop().run_until_complete(self.start_app())
 
-    def load_config(self, conf_path: str):
+    def load_config(self):
+        """Load the config from its path."""
+
         try:
-            with open(conf_path, 'r') as f:
+            with open(self.conf_path, 'r') as f:
                 self.config = json.loads(f.read())
         except IOError:
-            with open(conf_path, 'w+') as f:
+            with open(self.conf_path, 'w+') as f:
                 self.config = {
                     'prefix': '/',
-                    'conf_path': conf_path,
-                    'modules_path': './modules',
+                    'conf_path': self.conf_path,
+                    'modules_path': os.path.join(os.path.dirname(self.conf_path), 'modules'),
                     'unloaded_modules': []
                 }
                 f.write(json.dumps(self.config, indent=2))
@@ -49,6 +63,8 @@ class EasyControl(object):
             raise
 
     def load_modules(self):
+        """Load all the modules from the path specified in the config"""
+
         modules_list = os.listdir(self.config['modules_path'])
 
         for module in modules_list:
@@ -57,8 +73,9 @@ class EasyControl(object):
             if (not module.endswith('.py')
                     or module_name in self.config['unloaded_modules']):
                 continue
-            spec = importlib.util.spec_from_file_location(module_name,
-                                                          os.path.join(self.config['modules_path'], module))
+            spec = importlib.util.spec_from_file_location(
+                module_name, os.path.join(self.config['modules_path'], module)
+            )
             imported_module = importlib.util.module_from_spec(spec)
             spec.loader.exec_module(imported_module)
             self.modules[module_name] = imported_module.CmdModule(self.app, self.config).commands
@@ -67,6 +84,7 @@ class EasyControl(object):
                 self.app.add_handler(sub[0])
 
     async def start_app(self):
+        """Start the Pyrogram's client"""
         await self.app.start()
         await self.app.idle()
         await self.app.stop()

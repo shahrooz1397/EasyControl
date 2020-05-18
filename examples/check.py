@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-from pyrogram import Client, Filters, MessageHandler
+from pyrogram import Client, Filters, MessageHandler, Message
 from pyrogram.errors import BadRequest
 
 
@@ -30,7 +30,7 @@ class CmdModule(object):
         }
 
     @staticmethod
-    async def check(client, message):
+    async def check(client: Client, message: Message):
         try:
             await client.edit_message_text(message.chat.id, message.message_id, '✌🏻 <b>Userbot online CHECK</b>')
         except BadRequest:
