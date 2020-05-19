@@ -17,7 +17,7 @@
 import os
 import json
 import asyncio
-import importlib
+from importlib import util
 from pyrogram import Client
 from .basic_modules import BasicModulesLoader
 
@@ -73,10 +73,10 @@ class EasyControl(object):
             if (not module.endswith('.py')
                     or module_name in self.config['unloaded_modules']):
                 continue
-            spec = importlib.util.spec_from_file_location(
+            spec = util.spec_from_file_location(
                 module_name, os.path.join(self.config['modules_path'], module)
             )
-            imported_module = importlib.util.module_from_spec(spec)
+            imported_module = util.module_from_spec(spec)
             spec.loader.exec_module(imported_module)
             self.modules[module_name] = imported_module.CmdModule(self.app, self.config).commands
 
