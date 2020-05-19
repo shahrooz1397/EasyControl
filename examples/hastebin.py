@@ -29,7 +29,7 @@ class CmdModule(object):
         }
 
     @staticmethod
-    async def dump(client: Client, message: Message):
+    async def hastebin(client: Client, message: Message):
         if message.reply_to_message is None:
             await message.stop_propagation()
         key = requests.post('https://hastebin.com', data=message.reply_to_message.text.encode('UTF-8'))['key']
