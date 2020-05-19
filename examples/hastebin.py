@@ -32,7 +32,10 @@ class CmdModule(object):
     async def hastebin(client: Client, message: Message):
         if message.reply_to_message is None:
             await message.stop_propagation()
-        key = requests.post('https://hastebin.com', data=message.reply_to_message.text.encode('UTF-8'))['key']
+        key = requests.post(
+            'https://hastebin.com/documents',
+            data=message.reply_to_message.text.encode('UTF-8')
+        ).json()['key']
 
         try:
             await client.edit_message_text(
