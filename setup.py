@@ -5,7 +5,7 @@ with open('README.md', 'r') as f:
 
 setuptools.setup(
     name='easycontrol',
-    version='1.2.6',
+    version='1.2.7',
     description='An easy-to-use template for creating a fully working userbot on Telegram',
     long_description=long_description,
     long_description_content_type='text/markdown',
@@ -25,6 +25,6 @@ setuptools.setup(
     ],
     packages=setuptools.find_packages(),
     python_requires='>=3.6',
-    install_requires=['asyncio', 'importlib'],
-    dependency_links=['https://github.com/pyrogram/pyrogram/archive/asyncio.zip', ],
+    install_requires=['asyncio'],
+    dependency_links=['https://github.com/pyrogram/pyrogram/archive/asyncio.zip'],
 )
