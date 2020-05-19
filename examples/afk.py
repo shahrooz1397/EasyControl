@@ -43,7 +43,7 @@ class CmdModule(object):
             await message.stop_propagation()
         self.config['afk'] = {
             'is_afk': True,
-            'start': datetime.timestamp(datetime.utcnow()),
+            'since': datetime.timestamp(datetime.utcnow()),
             'notified': {}
         }
 
@@ -60,7 +60,7 @@ class CmdModule(object):
                 or not self.config['afk']['is_afk']):
             await message.stop_propagation()
         self.config['afk']['is_afk'] = False
-        del self.config['afk']['start']
+        del self.config['afk']['since']
         del self.config['afk']['notified']
 
         with open(self.config['conf_path'], 'w') as f:
@@ -85,8 +85,8 @@ class CmdModule(object):
         with open(self.config['conf_path'], 'w') as f:
             f.write(json.dumps(self.config, indent=2))
         await client.send_message(message.chat.id, os.linesep.join([
-            "<b>Hi, I went afk at</b> <code>{0}</code>.".format(
-                datetime.utcfromtimestamp(self.config['afk']['start']).strftime('%d/%m/%Y %H:%M:%S UTC')
+            "<b>Hi, I'm afk since </b> <code>{0}</code>.".format(
+                datetime.utcfromtimestamp(self.config['afk']['since']).strftime('%d/%m/%Y %H:%M:%S UTC')
             ),
             'Before writing me other messages, please wait me to get out of the afk status'
         ]))
