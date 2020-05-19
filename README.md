@@ -27,6 +27,3 @@ If you want to change the modules directory, after executing the ```main.py``` f
 
 ## Support
 If you need some help you can contact me on Telegram at [@lesbicazzo](https://t.me/lesbicazzo).
-
-## License
-[MIT](https://choosealicense.com/licenses/mit/)
