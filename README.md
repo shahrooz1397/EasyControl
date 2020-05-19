@@ -25,5 +25,8 @@ After that just execute the ```main.py``` file and start using your userbot!
 
 If you want to change the modules directory, after executing the ```main.py``` file once a ```config.json``` file will be created in its same directory. Just change the ```modules_path``` param with the new path of the modules directory.
 
+## Modules
+There are some modules in the [examples](https://github.com/mattiabrandon/EasyControl/tree/master/examples) folder of the github repository, however you are free to make your own ones, and if you think that it can be added to the examples, don't hesitate to contact [me](https://t.me/lesbicazzo).
+
 ## Support
 If you need some help you can contact me on Telegram at [@lesbicazzo](https://t.me/lesbicazzo).
