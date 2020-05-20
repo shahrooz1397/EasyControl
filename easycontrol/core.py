@@ -94,7 +94,7 @@ class CoreModule(object):
                 or not message.command[1] + '.py' in os.listdir(self.config['modules_path'])):
             await message.stop_propagation()
         imported = importlib.import_module(message.command[1])
-        imported.Module(self.modules_class)
+        imported.Module(self.modules_class.get_commands_dict(message.command[1]))
 
         if message.command[1] in self.config['unloaded_modules']:
             self.config['unloaded_modules'].remove(message.command[1])
@@ -116,12 +116,12 @@ class CoreModule(object):
     async def unload(self, client: Client, message: Message):
         if (not len(message.command) == 2
                 or not message.command[1] in self.modules
-                or message.command[1] == 'Core'):
+                or message.command[1] == 'core'):
             await message.stop_propagation()
-        self.config['unloaded_modules'].append(message.command[1])
 
         for value in self.modules[message.command[1]].values():
             client.remove_handler(value[0])
+        self.config['unloaded_modules'].append(message.command[1])
         del self.modules[message.command[1]]
 
         with open(self.config['config_path'], 'w') as f:
