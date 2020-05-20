@@ -18,16 +18,12 @@ from pyrogram.errors import BadRequest
 from pyrogram import Client, Filters, MessageHandler, Message
 
 
-class CmdModule(object):
-    def __init__(self, _: Client, config: dict):
-        self.commands = {  # Define the commands of the module
-            'check': [  # Define the first command
-                MessageHandler(self.check, Filters.command('check', config['prefix']) & Filters.me),
-                # Define the handler of the command
-                'Check if the userbot is online'  # Define the help message to be shown
-            ]
-            # Eventually add more commands with the same format
-        }
+class Module(object):
+    def __init__(self, modules_class):
+        modules_class.add_command(
+            MessageHandler(self.check, Filters.command('check', modules_class.config['prefix']) & Filters.me),
+            'Check if the userbot is online'
+        )
 
     @staticmethod
     async def check(client: Client, message: Message):
