@@ -5,7 +5,7 @@ with open('README.md', 'r') as f:
 
 setuptools.setup(
     name='easycontrol',
-    version='1.2.8',
+    version='1.2.9',
     description='An easy-to-use template for creating a fully working userbot on Telegram',
     long_description=long_description,
     long_description_content_type='text/markdown',

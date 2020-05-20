@@ -27,11 +27,11 @@ class CmdModule(object):
         self.config = config
         self.commands = {
             'afk': [
-                MessageHandler(self.afk, Filters.command('afk', config['prefix'])),
+                MessageHandler(self.afk, Filters.command('afk', config['prefix']) & Filters.me),
                 'Set the afk status on True'
             ],
             'unafk': [
-                MessageHandler(self.unafk, Filters.command('unafk', config['prefix'])),
+                MessageHandler(self.unafk, Filters.command('unafk', config['prefix']) & Filters.me),
                 'Set the afk status on False'
             ]
         }

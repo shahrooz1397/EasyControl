@@ -16,7 +16,7 @@
 
 import os
 import json
-import importlib
+from importlib import util
 from pyrogram.errors import BadRequest
 from pyrogram import Client, Filters, MessageHandler, Message
 
@@ -128,10 +128,10 @@ class BasicModulesLoader(object):
 
         if message.command[1] in self.config['unloaded_modules']:
             self.config['unloaded_modules'].remove(message.command[1])
-        spec = importlib.util.spec_from_file_location(
+        spec = util.spec_from_file_location(
             message.command[1], os.path.join(self.config['modules_path'], message.command[1] + '.py')
         )
-        imported_module = importlib.util.module_from_spec(spec)
+        imported_module = util.module_from_spec(spec)
         spec.loader.exec_module(imported_module)
         self.modules[message.command[1]] = imported_module.CmdModule(client, self.config).commands
 

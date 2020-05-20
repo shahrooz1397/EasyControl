@@ -23,7 +23,7 @@ class CmdModule(object):
     def __init__(self, _: Client, config: dict):
         self.commands = {
             'hastebin': [
-                MessageHandler(self.hastebin, Filters.command('hastebin', config['prefix'])),
+                MessageHandler(self.hastebin, Filters.command('hastebin', config['prefix']) & Filters.me),
                 'Create an hastebin link with the text in a reply message'
             ]
         }

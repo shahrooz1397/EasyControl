@@ -22,7 +22,7 @@ class CmdModule(object):
     def __init__(self, _: Client, config: dict):
         self.commands = {  # Define the commands of the module
             'check': [  # Define the first command
-                MessageHandler(self.check, Filters.command('check', config['prefix'])),
+                MessageHandler(self.check, Filters.command('check', config['prefix']) & Filters.me),
                 # Define the handler of the command
                 'Check if the userbot is online'  # Define the help message to be shown
             ]

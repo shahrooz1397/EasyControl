@@ -23,7 +23,7 @@ class CmdModule(object):
     def __init__(self, _: Client, config: dict):
         self.commands = {
             'dump': [
-                MessageHandler(self.dump, Filters.command('dump', config['prefix'])),
+                MessageHandler(self.dump, Filters.command('dump', config['prefix']) & Filters.me),
                 'Show the dump of the inline queries of the reply markup of the replied message'
             ]
         }
