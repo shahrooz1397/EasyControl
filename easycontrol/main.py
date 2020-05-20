@@ -15,76 +15,103 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import os
+import sys
 import json
 import asyncio
-from importlib import util
+import importlib
 from pyrogram import Client
-from .basic_modules import BasicModulesLoader
-
+from .core import CoreModule
 
 class EasyControl(object):
-    def __init__(
-            self, api_id: int, api_hash: str,
-            conf_path: str = os.path.join(os.path.abspath(os.getcwd()), 'config.json')
-    ):
-        """
-        Define the instance of this class, start the Pyrogram's client and load all the modules and commands.
+    ABSOLUTE_CWD = os.path.abspath(os.getcwd())
+    DEFAULT_CONFIG_PATH = os.path.join(ABSOLUTE_CWD, 'config.json')
+    DEFAULT_MODULES_PATH = os.path.join(ABSOLUTE_CWD, 'modules')
 
-        :param api_id: The api_id of the app used to start the client.
-        :param api_hash: The api_hash of the app used to start the client.
-        :param conf_path: The path to the config file.
-        """
-
-        self.conf_path = conf_path
+    def __init__(self, api_id: int, api_hash: str, config_path: str = DEFAULT_CONFIG_PATH):
         self.config = None
-        self.modules = {}
-        self.load_config()
+        self.load_config(config_path)
         self.app = Client('EasyControl', api_id, api_hash)
-        BasicModulesLoader(self.app, self.config, self.modules)
         self.load_modules()
         asyncio.get_event_loop().run_until_complete(self.start_app())
 
-    def load_config(self):
-        """Load the config from its path."""
-
+    def load_config(self, config_path):
         try:
-            with open(self.conf_path, 'r') as f:
+            with open(config_path, 'r') as f:
                 self.config = json.loads(f.read())
         except IOError:
-            with open(self.conf_path, 'w+') as f:
+            config_path = self.DEFAULT_CONFIG_PATH
+
+            with open(config_path, 'w+') as f:
                 self.config = {
                     'prefix': '/',
-                    'conf_path': self.conf_path,
-                    'modules_path': os.path.join(os.path.dirname(self.conf_path), 'modules'),
+                    'config_path': self.DEFAULT_CONFIG_PATH,
+                    'modules_path': self.DEFAULT_MODULES_PATH,
                     'unloaded_modules': []
                 }
                 f.write(json.dumps(self.config, indent=2))
         except ValueError:
             raise
+        edited = False
+
+        if not 'prefix' in self.config:
+            edited = True
+            self.config['prefix'] = '/'
+        elif not 'config_path' in self.config:
+            edited = True
+            self.config['config_path'] = config_path
+        elif not 'modules_path' in self.config:
+            edited = True
+            self.config['modules_path'] = self.DEFAULT_MODULES_PATH
+        elif not 'unloaded_modules' in self.config:
+            edited = True
+            self.config['modules_path'] = []
+
+        if edited:
+            with open(config_path, 'w') as f:
+                f.write(json.dumps(self.config, indent=2))
 
     def load_modules(self):
-        """Load all the modules from the path specified in the config"""
+        modules_class = Modules(self.app, self.config)
+        CoreModule(modules_class.get_commands_dict('core'))
+        sys.path.append(self.config['modules_path'])
 
-        modules_list = os.listdir(self.config['modules_path'])
+        for file in os.listdir(self.config['modules_path']):
+            name = os.path.splitext(file)[0]
 
-        for module in modules_list:
-            module_name = os.path.splitext(module)[0]
-
-            if (not module.endswith('.py')
-                    or module_name in self.config['unloaded_modules']):
+            if (file == '__init__.py'
+                    or not file.endswith('.py')
+                    or name in self.config['unloaded_modules']):
                 continue
-            spec = util.spec_from_file_location(
-                module_name, os.path.join(self.config['modules_path'], module)
-            )
-            imported_module = util.module_from_spec(spec)
-            spec.loader.exec_module(imported_module)
-            self.modules[module_name] = imported_module.CmdModule(self.app, self.config).commands
-
-            for sub in self.modules[module_name].values():
-                self.app.add_handler(sub[0])
+            imported = importlib.import_module(name)
+            imported.Module(modules_class.get_commands_dict(name))
 
     async def start_app(self):
-        """Start the Pyrogram's client"""
         await self.app.start()
         await self.app.idle()
         await self.app.stop()
+
+
+class Modules(object):
+    def __init__(self, app: Client, config: dict):
+        self.app = app
+        self.config = config
+        self.modules = {}
+        self.name = None
+
+    def get_commands_dict(self, name: str):
+        self.modules[name] = {}
+        self.name = name
+        return self
+
+    def add_command(self, handler, help: str):
+        if hasattr(handler.filters, 'base'):
+            commands = handler.filters.base.commands
+        else:
+            commands = handler.filters.commands
+
+        for command in commands:
+            self.modules[self.name][command] = [
+                handler,
+                help
+            ]
+        self.app.add_handler(handler)

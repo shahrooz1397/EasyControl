@@ -16,63 +16,43 @@
 
 import os
 import json
-from importlib import util
+import importlib
 from pyrogram.errors import BadRequest
 from pyrogram import Client, Filters, MessageHandler, Message
 
 
-class BasicModulesLoader(object):
-    def __init__(self, app: Client, config: dict, modules: dict):
-        """
-        Define the instance of this class and add the commands to the main's class modules dictionary.
-
-        :param app: The Client instance of the started Pyrogram's client.
-        :param config: The config instance of the main class.
-        :param modules: The modules instance of the main class.
-        """
-
-        self.config = config
-        self.modules = modules
-        self.modules['_'] = {
-            'help': [
-                MessageHandler(self.help, Filters.command('help', self.config['prefix']) & Filters.me),
-                'Show this message'
-            ],
-            'prefix': [
-                MessageHandler(self.prefix, Filters.command('prefix', self.config['prefix']) & Filters.me),
-                'Change the prefix of the commands'
-            ],
-            'load': [
-                MessageHandler(self.load, Filters.command('load', self.config['prefix']) & Filters.me),
-                'Load a module'
-            ],
-            'unload': [
-                MessageHandler(self.unload, Filters.command('unload', self.config['prefix']) & Filters.me),
-                'Unload a module'
-            ]
-        }
-
-        for sub in self.modules['_'].values():
-            app.add_handler(sub[0])
+class CoreModule(object):
+    def __init__(self, modules_class):
+        self.modules_class = modules_class
+        self.config = self.modules_class.config
+        self.modules = self.modules_class.modules
+        self.modules_class.add_command(
+            MessageHandler(self.help, Filters.command('help', self.config['prefix']) & Filters.me),
+            'Show this message'
+        )
+        self.modules_class.add_command(
+            MessageHandler(self.prefix, Filters.command('prefix', self.config['prefix']) & Filters.me),
+            'Change the prefix of the commands'
+        )
+        self.modules_class.add_command(
+            MessageHandler(self.load, Filters.command('load', self.config['prefix']) & Filters.me),
+            'Load a module'
+        )
+        self.modules_class.add_command(
+            MessageHandler(self.unload, Filters.command('unload', self.config['prefix']) & Filters.me),
+            'Unload a module'
+        )
 
     async def help(self, client: Client, message: Message):
-        """Help command's handler
-
-        :param client: The Client instance of the started Pyrogram's client.
-        :param message: The Message instance of the started Pyrogram's client.
-        """
-
         text = ["<b>Here's the full list of the available commands:</b>"]
 
         for module_name, module in self.modules.items():
             if module_name in self.config['unloaded_modules']:
                 continue
-            text.append('<b>{0}:</b>'.format(
-                'Default commands' if module_name == '_' else "</b><i>{0}</i> <b>module's commands".format(module_name)
-            ))
+            text.append("<i>{0}</i> <b>module's commands</b>".format(module_name))
 
-            for command, sub in module.items():
-                text.append('<code>{0}{1}</code>: {2}'.format(self.config['prefix'], command, sub[1]))
+            for command, value in module.items():
+                text.append('<code>{0}{1}</code>: {2}'.format(self.config['prefix'], command, value[1]))
             text.append('')
         text.append('<code>Powered by EasyControl</code>')
 
@@ -82,23 +62,17 @@ class BasicModulesLoader(object):
             await client.send_message(message.chat.id, os.linesep.join(text))
 
     async def prefix(self, client: Client, message: Message):
-        """Prefix command's handler
-
-        :param client: The Client instance of the started Pyrogram's client.
-        :param message: The Message instance of the started Pyrogram's client.
-        """
-
         old_prefix = self.config['prefix']
         self.config['prefix'] = message.command[1] if len(message.command) == 2 else '/'
 
-        for module in self.modules.values():
-            for sub in module.values():
-                if hasattr(sub[0].filters, 'base'):
-                    sub[0].filters.base.prefixes = [self.config['prefix']]
+        for commands in self.modules.values():
+            for value in commands.values():
+                if hasattr(value[0].filters, 'base'):
+                    value[0].filters.base.prefixes = [self.config['prefix']]
                 else:
-                    sub[0].filters.prefixes = [self.config['prefix']]
+                    value[0].filters.prefixes = [self.config['prefix']]
 
-        with open(self.config['conf_path'], 'w') as f:
+        with open(self.config['config_path'], 'w') as f:
             f.write(json.dumps(self.config, indent=2))
 
         try:
@@ -115,31 +89,18 @@ class BasicModulesLoader(object):
             ]))
 
     async def load(self, client: Client, message: Message):
-        """Load command's handler
-
-        :param client: The Client instance of the started Pyrogram's client.
-        :param message: The Message instance of the started Pyrogram's client.
-        """
-
         if (not len(message.command) == 2
                 or message.command[1] in self.modules
                 or not message.command[1] + '.py' in os.listdir(self.config['modules_path'])):
             await message.stop_propagation()
+        imported = importlib.import_module(message.command[1])
+        imported.Module(self.modules_class)
 
         if message.command[1] in self.config['unloaded_modules']:
             self.config['unloaded_modules'].remove(message.command[1])
-        spec = util.spec_from_file_location(
-            message.command[1], os.path.join(self.config['modules_path'], message.command[1] + '.py')
-        )
-        imported_module = util.module_from_spec(spec)
-        spec.loader.exec_module(imported_module)
-        self.modules[message.command[1]] = imported_module.CmdModule(client, self.config).commands
 
-        for sub in self.modules[message.command[1]].values():
-            client.add_handler(sub[0])
-
-        with open(self.config['conf_path'], 'w') as f:
-            f.write(json.dumps(self.config, indent=2))
+            with open(self.config['config_path'], 'w') as f:
+                f.write(json.dumps(self.config, indent=2))
 
         try:
             await client.edit_message_text(
@@ -153,23 +114,17 @@ class BasicModulesLoader(object):
             )
 
     async def unload(self, client: Client, message: Message):
-        """Unload command's handler
-
-        :param client: The Client instance of the started Pyrogram's client.
-        :param message: The Message instance of the started Pyrogram's client.
-        """
-
         if (not len(message.command) == 2
                 or not message.command[1] in self.modules
-                or message.command[1] == '_'):
+                or message.command[1] == 'Core'):
             await message.stop_propagation()
         self.config['unloaded_modules'].append(message.command[1])
 
-        for sub in self.modules[message.command[1]].values():
-            client.remove_handler(sub[0])
+        for value in self.modules[message.command[1]].values():
+            client.remove_handler(value[0])
         del self.modules[message.command[1]]
 
-        with open(self.config['conf_path'], 'w') as f:
+        with open(self.config['config_path'], 'w') as f:
             f.write(json.dumps(self.config, indent=2))
 
         try:

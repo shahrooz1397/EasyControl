@@ -16,18 +16,17 @@
 
 import os
 import html
+from easycontrol import Modules
 from pyrogram.errors import BadRequest
 from pyrogram import Client, Filters, MessageHandler, Message
 
 
-class CmdModule(object):
-    def __init__(self, _: Client, config: dict):
-        self.commands = {
-            'info': [
-                MessageHandler(self.info, Filters.command('info', config['prefix']) & Filters.me),
-                'Show some info about the user of the replied message'
-            ]
-        }
+class Module(object):
+    def __init__(self, modules_class: Modules):
+        modules_class.add_command(
+            MessageHandler(self.info, Filters.command('info', modules_class.config['prefix']) & Filters.me),
+            'Show some info about the user of the replied message'
+        )
 
     @staticmethod
     async def info(client: Client, message: Message):

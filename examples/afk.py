@@ -15,27 +15,25 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import os
-import math
 import json
 from datetime import datetime
+from easycontrol import Modules
 from pyrogram.errors import BadRequest
 from pyrogram import Client, Filters, MessageHandler, Message
 
 
-class CmdModule(object):
-    def __init__(self, app: Client, config: dict):
-        self.config = config
-        self.commands = {
-            'afk': [
-                MessageHandler(self.afk, Filters.command('afk', config['prefix']) & Filters.me),
-                'Set the afk status on True'
-            ],
-            'unafk': [
-                MessageHandler(self.unafk, Filters.command('unafk', config['prefix']) & Filters.me),
-                'Set the afk status on False'
-            ]
-        }
-        app.add_handler(MessageHandler(self.wrapper, Filters.private & ~Filters.me), group=-1)
+class Module(object):
+    def __init__(self, modules_class: Modules):
+        self.config = modules_class.config
+        modules_class.add_command(
+            MessageHandler(self.afk, Filters.command('afk', self.config['prefix']) & Filters.me),
+            'Set the afk status on True'
+        )
+        modules_class.add_command(
+            MessageHandler(self.unafk, Filters.command('unafk', self.config['prefix']) & Filters.me),
+            'Set the afk status on False'
+        )
+        modules_class.app.add_handler(MessageHandler(self.wrapper, Filters.private & ~Filters.me), group=-1)
 
     async def afk(self, client: Client, message: Message):
         if ('afk' in self.config
@@ -43,11 +41,11 @@ class CmdModule(object):
             await message.stop_propagation()
         self.config['afk'] = {
             'is_afk': True,
-            'since': datetime.timestamp(datetime.utcnow()),
+            'since': int(datetime.utcnow().timestamp()),
             'notified': {}
         }
 
-        with open(self.config['conf_path'], 'w') as f:
+        with open(self.config['config_path'], 'w') as f:
             f.write(json.dumps(self.config, indent=2))
 
         try:
@@ -59,11 +57,9 @@ class CmdModule(object):
         if (not 'afk' in self.config
                 or not self.config['afk']['is_afk']):
             await message.stop_propagation()
-        self.config['afk']['is_afk'] = False
-        del self.config['afk']['since']
-        del self.config['afk']['notified']
+        self.config['afk'] = {'is_afk': False}
 
-        with open(self.config['conf_path'], 'w') as f:
+        with open(self.config['config_path'], 'w') as f:
             f.write(json.dumps(self.config, indent=2))
 
         try:
@@ -72,7 +68,7 @@ class CmdModule(object):
             await client.send_message(message.chat.id, '<b>Afk mode disabled</b>')
 
     async def wrapper(self, client: Client, message: Message):
-        now = datetime.timestamp(datetime.utcnow())
+        now = int(datetime.utcnow().timestamp())
 
         if (message.from_user.is_bot
                 or not 'afk' in self.config
@@ -82,11 +78,11 @@ class CmdModule(object):
             return
         self.config['afk']['notified'][message.from_user.id] = now + 3600
 
-        with open(self.config['conf_path'], 'w') as f:
+        with open(self.config['config_path'], 'w') as f:
             f.write(json.dumps(self.config, indent=2))
         await client.send_message(message.chat.id, os.linesep.join([
             "<b>Hi, I'm afk since </b> <code>{0}</code>.".format(
-                datetime.utcfromtimestamp(self.config['afk']['since']).strftime('%d/%m/%Y %H:%M:%S UTC')
+                datetime.fromtimestamp(self.config['afk']['since']).strftime('%d/%m/%Y %H:%M:%S UTC')
             ),
             'Before writing me other messages, please wait me to get out of the afk status'
         ]))

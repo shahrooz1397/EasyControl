@@ -15,18 +15,17 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import os
+from easycontrol import Modules
 from pyrogram.errors import BadRequest
 from pyrogram import Client, Filters, MessageHandler, Message
 
 
-class CmdModule(object):
-    def __init__(self, _: Client, config: dict):
-        self.commands = {
-            'dump': [
-                MessageHandler(self.dump, Filters.command('dump', config['prefix']) & Filters.me),
-                'Show the dump of the inline queries of the reply markup of the replied message'
-            ]
-        }
+class Module(object):
+    def __init__(self, modules_class: Modules):
+        modules_class.add_command(
+            MessageHandler(self.dump, Filters.command('dump', modules_class.config['prefix']) & Filters.me),
+            'Show the dump of the inline queries of the reply markup of the replied message'
+        )
 
     @staticmethod
     async def dump(client: Client, message: Message):

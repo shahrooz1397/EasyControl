@@ -15,18 +15,17 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import requests
+from easycontrol import Modules
 from pyrogram.errors import BadRequest
 from pyrogram import Client, Filters, MessageHandler, Message
 
 
-class CmdModule(object):
-    def __init__(self, _: Client, config: dict):
-        self.commands = {
-            'hastebin': [
-                MessageHandler(self.hastebin, Filters.command('hastebin', config['prefix']) & Filters.me),
-                'Create an hastebin link with the text in a reply message'
-            ]
-        }
+class Module(object):
+    def __init__(self, modules_class: Modules):
+        modules_class.add_command(
+            MessageHandler(self.hastebin, Filters.command('hastebin', modules_class.config['prefix']) & Filters.me),
+            'Create an hastebin link with the text in a reply message'
+        )
 
     @staticmethod
     async def hastebin(client: Client, message: Message):

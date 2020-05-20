@@ -15,18 +15,17 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import asyncio
+from easycontrol import Modules
 from pyrogram.errors import BadRequest
 from pyrogram import Client, Filters, MessageHandler, Message
 
 
-class CmdModule(object):
-    def __init__(self, _: Client, config: dict):
-        self.commands = {
-            'flood': [
-                MessageHandler(self.flood, Filters.command('flood', config['prefix']) & Filters.me),
-                'Flood a maximum of 100 messages'
-            ]
-        }
+class Module(object):
+    def __init__(self, modules_class: Modules):
+        modules_class.add_command(
+            MessageHandler(self.flood, Filters.command('flood', modules_class.config['prefix']) & Filters.me),
+            'Flood a maximum of 100 messages'
+        )
 
     async def flood(self, client: Client, message: Message):
         tasks = []
